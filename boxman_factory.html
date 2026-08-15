@@ -594,6 +594,36 @@
       seSlidePath: "sounds/SE_01.mp3"       // スライド効果音
     };
 
+    // 画像プリロード管理オブジェクト（読み込み成功状態をキャシュ）
+    const imageCache = {};
+
+    function preloadImages() {
+      const urlsToLoad = [
+        CONFIG.headImage,
+        CONFIG.bodyImage,
+        CONFIG.legsImage,
+        CONFIG.startImage,
+        CONFIG.resultImage,
+        CONFIG.toastIconImage,
+        ...CONFIG.titlePartsImages
+      ];
+
+      urlsToLoad.forEach(url => {
+        if (!url || url.trim() === "") return;
+        const img = new Image();
+        img.src = url;
+        img.onload = () => {
+          imageCache[url] = true;
+        };
+        img.onerror = () => {
+          imageCache[url] = false;
+        };
+      });
+    }
+
+    // ページロード時にプリロード開始
+    preloadImages();
+
     const BOARD_SIZE = 5;
     const GAME_TIME = 60;
 
@@ -663,7 +693,7 @@
     function initTitleImage() {
       const container = document.getElementById('titleImageContainer');
       if (CONFIG.startImage && CONFIG.startImage.trim() !== "") {
-        container.innerHTML = `<img src="${CONFIG.startImage}" class="bg-gif" alt="タイトル画像" onerror="this.parentElement.innerHTML='<span style=\'color:#e74c3c;font-size:12px;\'>画像の読み込み失敗</span>'">`;
+        container.innerHTML = `<img src="${CONFIG.startImage}" class="bg-gif" alt="タイトル画像" onerror="this.parentElement.innerHTML='<span style=\'color:#7f8c8d;font-size:14px;\'>[ タイトル画像領域 ]</span>'">`;
       }
       startTitlePartsFlow();
     }
@@ -678,8 +708,6 @@
 
       // 0.1秒ごとの定期実行ループ
       flowingPartsInterval = setInterval(() => {
-        // 画面最後にいるパーツの位置をチェックし、2pxの隙間が空いたタイミングで新規パーツ投入
-        // パーツ幅48px + 隙間2px = 50px間隔（位置が 320 - 50 = 270px 以下になったら生成）
         const lastPart = activeFlowingParts[activeFlowingParts.length - 1];
         if (!lastPart || lastPart.x <= (320 - (48 + 2))) {
           spawnFlowingPart(container);
@@ -967,13 +995,25 @@
       elem.className = `cell ${typeObj.class}`;
       
       const customImgUrl = CONFIG[typeObj.imageKey];
+
+      // キャッシュ（プリロード済み）にあれば即時表示設定して一瞬のチラつきを防ぐ
       if (customImgUrl && customImgUrl.trim() !== "") {
-        const imgTest = new Image();
-        imgTest.onload = () => {
+        if (imageCache[customImgUrl] === true) {
           elem.style.backgroundImage = `url("${customImgUrl}")`;
           elem.classList.add('has-image');
-        };
-        imgTest.src = customImgUrl;
+        } else if (imageCache[customImgUrl] === undefined) {
+          // 未ロードの場合は非同期で判定
+          const imgTest = new Image();
+          imgTest.onload = () => {
+            imageCache[customImgUrl] = true;
+            elem.style.backgroundImage = `url("${customImgUrl}")`;
+            elem.classList.add('has-image');
+          };
+          imgTest.onerror = () => {
+            imageCache[customImgUrl] = false;
+          };
+          imgTest.src = customImgUrl;
+        }
       }
 
       const iconSpan = document.createElement('span');
