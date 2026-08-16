@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ランキング送信テスト</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #1a252f;
+      color: #ecf0f1;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .test-card {
+      background: #2c3e50;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      border: 3px solid #34495e;
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #f1c40f;
+      text-align: center;
+      margin: 0;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 12px;
+      color: #bdc3c7;
+      font-weight: bold;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #34495e;
+      background: #111820;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #f1c40f, #f39c12);
+      color: #1a252f;
+      font-size: 15px;
+      font-weight: bold;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.15s, opacity 0.2s;
+      width: 100%;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: #fff;
+    }
+
+    /* ランキングモーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #2c3e50;
+      border: 3px solid #34495e;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 340px;
+      max-height: 80vh;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #f1c40f;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .ranking-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 12px 0;
+      overflow-y: auto;
+      max-height: 250px;
+    }
+
+    .ranking-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      background: #111820;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .ranking-item:nth-child(1) { border-left: 4px solid #f1c40f; }
+    .ranking-item:nth-child(2) { border-left: 4px solid #bdc3c7; }
+    .ranking-item:nth-child(3) { border-left: 4px solid #e67e22; }
+
+    .ranking-rank {
+      font-weight: bold;
+      width: 32px;
+      color: #f1c40f;
+    }
+
+    .ranking-name {
+      flex: 1;
+      margin: 0 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+    }
+
+    .ranking-score {
+      font-weight: bold;
+      color: #2ecc71;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="test-card">
+    <h1 class="title">スコア送信テスト</h1>
+
+    <div class="form-group">
+      <label for="testNameInput">プレイヤー名</label>
+      <input type="text" id="testNameInput" class="input-field" placeholder="名前を入力 (10文字以内)" maxlength="10">
+    </div>
+
+    <div class="form-group">
+      <label for="testScoreInput">送信スコア</label>
+      <input type="number" id="testScoreInput" class="input-field" placeholder="スコアを入力" value="10" min="0">
+    </div>
+
+    <button id="submitBtn" class="btn" onclick="submitScoreToFirebase()">スコアを送信</button>
+    <button class="btn btn-secondary" onclick="openRankingModal()">TOP100を見る</button>
+  </div>
+
+  <!-- ランキング表示モーダル -->
+  <div class="modal-overlay" id="rankingModal">
+    <div class="modal-content">
+      <div class="modal-title">🏆 TOP 100 ランキング</div>
+      <ul class="ranking-list" id="rankingListContainer">
+        <!-- JSで動的に追加されます -->
+      </ul>
+      <button class="btn btn-secondary" onclick="closeRankingModal()">閉じる</button>
+    </div>
+  </div>
+
+  <!-- Firebase 処理 Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } 
+      from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBO6jAQOmInB5I6SB_KSxaNnxtdivvoUKY",
+      authDomain: "boxman-games.firebaseapp.com",
+      projectId: "boxman-games",
+      storageBucket: "boxman-games.firebasestorage.app",
+      messagingSenderId: "494957234530",
+      appId: "1:494957234530:web:a18fa9552695c138bb443b",
+      measurementId: "G-EP2S3H2L5C"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // スコア送信関数
+    window.submitScoreToFirebase = async function() {
+      const nameInput = document.getElementById("testNameInput");
+      const scoreInput = document.getElementById("testScoreInput");
+      const submitBtn = document.getElementById("submitBtn");
+
+      const name = nameInput.value.trim();
+      const score = scoreInput.value.trim();
+
+      if (!name) {
+        alert("名前を入力してください");
+        return;
+      }
+
+      if (score === "" || isNaN(score)) {
+        alert("有効なスコアを入力してください");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "送信中...";
+
+      try {
+        await addDoc(collection(db, "rankings"), {
+          name: name,
+          score: Number(score),
+          createdAt: serverTimestamp()
+        });
+
+        alert("スコアを送信しました！");
+        window.openRankingModal();
+      } catch (error) {
+        console.error("スコア送信エラー:", error);
+        alert("送信に失敗しました。\nエラー詳細: " + error.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "スコアを送信";
+      }
+    };
+
+    // ランキング取得関数
+    window.loadRankingFromFirebase = async function() {
+      const listElem = document.getElementById("rankingListContainer");
+      listElem.innerHTML = '<li class="ranking-item" style="justify-content:center;">読み込み中...</li>';
+
+      try {
+        const q = query(
+          collection(db, "rankings"),
+          orderBy("score", "desc"),
+          orderBy("createdAt", "asc"),
+          limit(100)
+        );
+        const querySnapshot = await getDocs(q);
+
+        listElem.innerHTML = "";
+        if (querySnapshot.empty) {
+          listElem.innerHTML = '<li class="ranking-item" style="justify-content:center;">データがありません</li>';
+          return;
+        }
+
+        let rank = 1;
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const li = document.createElement("li");
+          li.className = "ranking-item";
+          li.innerHTML = `
+            <span class="ranking-rank">${rank}</span>
+            <span class="ranking-name">${escapeHtml(data.name || "名無し")}</span>
+            <span class="ranking-score">${data.score}体</span>
+          `;
+          listElem.appendChild(li);
+          rank++;
+        });
+      } catch (error) {
+        console.error("ランキング取得エラー:", error);
+        listElem.innerHTML = '<li class="ranking-item" style="justify-content:center;">取得に失敗しました</li>';
+      }
+    };
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // モーダル操作関数
+    window.openRankingModal = function() {
+      document.getElementById("rankingModal").classList.add("active");
+      window.loadRankingFromFirebase();
+    };
+
+    window.closeRankingModal = function() {
+      document.getElementById("rankingModal").classList.remove("active");
+    };
+  </script>
+</body>
+</html>
