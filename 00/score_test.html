@@ -209,6 +209,8 @@
   <!-- Firebase 処理 Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    // App Check 用のモジュールを追加読み込み
+    import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check.js";
     import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } 
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -222,7 +224,16 @@
       measurementId: "G-EP2S3H2L5C"
     };
 
+    // 1. Firebase アプリの初期化
     const app = initializeApp(firebaseConfig);
+
+    // 2. Firebase App Check の初期化 (Firestore等の呼び出しより前に記述します)
+    const appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LfhkogtAAAAAKC7iPwWU4W559_qkhp-G5muQmb_'),
+      isTokenAutoRefreshEnabled: true
+    });
+
+    // 3. Firestore の初期化
     const db = getFirestore(app);
 
     // スコア送信関数
