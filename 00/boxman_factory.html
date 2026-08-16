@@ -624,10 +624,11 @@
 <body>
 
   <!-- ===================================================
-       ★ Firebase 初期化 & ランキング処理 Script ★
+       ★ Firebase & App Check 初期化 & ランキング処理 Script ★
        =================================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check.js";
     import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } 
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -643,6 +644,13 @@
     };
 
     const app = initializeApp(firebaseConfig);
+
+    // ★ App Check (reCAPTCHA v3) の初期化
+    const appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LfhkogtAAAAAKC7iPwWU4W559_qkhp-G5muQmb_'),
+      isTokenAutoRefreshEnabled: true
+    });
+
     const db = getFirestore(app);
 
     // スコア送信処理
@@ -1234,13 +1242,13 @@
         submitBtn.disabled = false;
         submitBtn.textContent = "送信";
         noticeElem.style.color = "#2ecc71";
-        noticeElem.textContent = `🎉 自己ベスト更新！ (前回の記録: ${savedHighScore}体)`;
+        noticeElem.textContent = `🎉 自己ベスト更新！`;
       } else {
         // ハイスコア未更新時はボタン無効化
         submitBtn.disabled = true;
         submitBtn.textContent = "送信不可";
         noticeElem.style.color = "#e74c3c";
-        noticeElem.textContent = `自己ベスト(${savedHighScore}体)に届きませんでした`;
+        noticeElem.textContent = `自己ベストは${savedHighScore}体です。`;
       }
 
       showScreen(resultScreen);
